@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/light_blue">
+
+    <ImageButton
+        android:id="@+id/play_button"
+        android:layout_width="373dp"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/button_container"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="-10dp"
+        android:adjustViewBounds="true"
+        android:background="@android:color/transparent"
+        android:maxWidth="200dp"
+        android:src="@drawable/playbutton" />
+
+    <LinearLayout
+        android:id="@+id/button_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="@color/darker_blue"
+        android:orientation="horizontal"
+        android:weightSum="3">
+
+        <ImageButton
+            android:id="@+id/clan_button"
+            android:layout_width="0dp"
+            android:layout_height="72dp"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:src="@drawable/clan" />
+
+        <ImageButton
+            android:id="@+id/pvp_button"
+            android:layout_width="0dp"
+            android:layout_height="72dp"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:src="@drawable/pvp" />
+
+        <ImageButton
+            android:id="@+id/store_button"
+            android:layout_width="0dp"
+            android:layout_height="72dp"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:src="@drawable/store" />
+
+    </LinearLayout>
+
+</RelativeLayout>
