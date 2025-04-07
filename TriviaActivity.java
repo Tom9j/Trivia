@@ -2,14 +2,19 @@ package com.example.trivia;
 
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Html;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -17,28 +22,41 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class TriviaActivity extends AppCompatActivity {
 
+    FirebaseDatabase database = FirebaseDatabase.getInstance();
+    FirebaseAuth auth = FirebaseAuth.getInstance();
+
     private TextView questionText, questionNumberText, scoreText, timerText;
-    private MaterialButton option1, option2, option3, option4, nextButton;
+    private MaterialButton option1, option2, option3, option4;
     private ProgressBar progressBar;
     private String correctAnswer;
+
     private int currentQuestionNumber = 0;
-    private int totalQuestions = 10;
+    private final int totalQuestions = 10;
     private int score = 0;
+
     private CountDownTimer countDownTimer;
-    private static final int QUESTION_TIME = 30; // 30 שניות לשאלה
+    private static final int QUESTION_TIME = 30;          // שניות לשאלה
+    private static final long FEEDBACK_DELAY = 5300;      // מ"ש משוב לפני שאלה הבאה
+
+    private Handler handler;
+    private boolean answered = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_trivia);
 
-        // אתחול רכיבי ה-UI
+        // איתחול רכיבי UI
         questionText = findViewById(R.id.question_text);
         questionNumberText = findViewById(R.id.question_number);
         scoreText = findViewById(R.id.score_text);
@@ -47,32 +65,18 @@ public class TriviaActivity extends AppCompatActivity {
         option2 = findViewById(R.id.option2);
         option3 = findViewById(R.id.option3);
         option4 = findViewById(R.id.option4);
-        nextButton = findViewById(R.id.next_button);
         progressBar = findViewById(R.id.progress_bar);
 
-        // הגדרת ערכים התחלתיים
-        updateQuestionNumber();
+        handler = new Handler(Looper.getMainLooper());
+
         updateScore();
-
-        // טעינת שאלה ראשונה
         loadTriviaQuestion();
-
-        // הגדרת מאזין לכפתור "שאלה הבאה"
-        nextButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (countDownTimer != null) {
-                    countDownTimer.cancel();
-                }
-                loadTriviaQuestion();
-            }
-        });
     }
 
+    // ----------------------- UI helpers -----------------------
+
     private void updateQuestionNumber() {
-        currentQuestionNumber++;
         questionNumberText.setText("שאלה " + currentQuestionNumber + "/" + totalQuestions);
-        // עדכון פס ההתקדמות
         int progress = (currentQuestionNumber * 100) / totalQuestions;
         progressBar.setProgress(progress);
     }
@@ -81,12 +85,12 @@ public class TriviaActivity extends AppCompatActivity {
         scoreText.setText("ניקוד: " + score);
     }
 
-    private void startTimer() {
-        if (countDownTimer != null) {
-            countDownTimer.cancel();
-        }
+    // ----------------------- Timer ----------------------------
 
-        countDownTimer = new CountDownTimer(QUESTION_TIME * 1000, 1000) {
+    private void startTimer() {
+        if (countDownTimer != null) countDownTimer.cancel();
+
+        countDownTimer = new CountDownTimer(QUESTION_TIME * 1000L, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 timerText.setText(String.valueOf(millisUntilFinished / 1000));
@@ -97,15 +101,25 @@ public class TriviaActivity extends AppCompatActivity {
                 timerText.setText("0");
                 disableButtons();
                 Toast.makeText(TriviaActivity.this, "נגמר הזמן!", Toast.LENGTH_SHORT).show();
+                handler.postDelayed(() -> loadTriviaQuestion(), FEEDBACK_DELAY);
             }
         }.start();
     }
 
+    // ----------------------- Networking & Question Logic ----------------
+
     private void loadTriviaQuestion() {
-        // איפוס מצב הכפתורים
+        if (currentQuestionNumber >= totalQuestions) {
+            showGameOverDialog();
+            return;
+        }
+
+        answered = false;
         resetButtons();
 
-        // הצגת טעינה
+        currentQuestionNumber++;
+        updateQuestionNumber();
+
         questionText.setText("טוען שאלה...");
         progressBar.setVisibility(View.VISIBLE);
 
@@ -123,17 +137,15 @@ public class TriviaActivity extends AppCompatActivity {
 
                             String question = questionObj.getString("question");
                             correctAnswer = questionObj.getString("correct_answer");
-
                             JSONArray incorrectAnswers = questionObj.getJSONArray("incorrect_answers");
 
-                            // חשוב: פענוח HTML entities
+                            // הצגת השאלה
                             questionText.setText(Html.fromHtml(question, Html.FROM_HTML_MODE_LEGACY));
 
-                            // הצגת תשובות בערבוב אקראי
+                            // ערבוב תשובות
                             String[] answers = new String[4];
                             int correctPosition = (int) (Math.random() * 4);
                             int index = 0;
-
                             for (int i = 0; i < 4; i++) {
                                 if (i == correctPosition) {
                                     answers[i] = correctAnswer;
@@ -149,7 +161,6 @@ public class TriviaActivity extends AppCompatActivity {
 
                             setAnswerClickListeners();
                             startTimer();
-                            updateQuestionNumber();
 
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -164,52 +175,51 @@ public class TriviaActivity extends AppCompatActivity {
             }
         });
 
+        // timeout ארוך יותר
+        request.setRetryPolicy(new DefaultRetryPolicy(
+                5000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+
         queue.add(request);
     }
 
-    private void resetButtons() {
-        option1.setEnabled(true);
-        option2.setEnabled(true);
-        option3.setEnabled(true);
-        option4.setEnabled(true);
+    // ----------------------- Button Handling -----------------
 
-        option1.setBackgroundTintList(getColorStateList(R.color.option_button_bg));
-        option2.setBackgroundTintList(getColorStateList(R.color.option_button_bg));
-        option3.setBackgroundTintList(getColorStateList(R.color.option_button_bg));
-        option4.setBackgroundTintList(getColorStateList(R.color.option_button_bg));
+    private void resetButtons() {
+        MaterialButton[] buttons = {option1, option2, option3, option4};
+        for (MaterialButton b : buttons) {
+            b.setEnabled(true);
+            b.setBackgroundTintList(getColorStateList(R.color.option_button_bg));
+        }
     }
 
     private void setAnswerClickListeners() {
-        View.OnClickListener listener = new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // עצירת הטיימר
-                if (countDownTimer != null) {
-                    countDownTimer.cancel();
-                }
+        View.OnClickListener listener = v -> {
+            if (answered) return;   // מניעת לחיצות כפולות
+            answered = true;
 
-                MaterialButton selectedButton = (MaterialButton) v;
-                String selectedAnswer = selectedButton.getText().toString();
+            if (countDownTimer != null) countDownTimer.cancel();
 
-                if (selectedAnswer.equals(correctAnswer) ||
-                        Html.fromHtml(correctAnswer, Html.FROM_HTML_MODE_LEGACY).toString().equals(selectedAnswer)) {
-                    // תשובה נכונה
-                    selectedButton.setBackgroundTintList(getColorStateList(R.color.correct_answer));
-                    Toast.makeText(TriviaActivity.this, "נכון!", Toast.LENGTH_SHORT).show();
-                    score += 10;
-                    updateScore();
-                } else {
-                    // תשובה לא נכונה
-                    selectedButton.setBackgroundTintList(getColorStateList(R.color.wrong_answer));
+            MaterialButton selectedButton = (MaterialButton) v;
+            String selectedAnswer = selectedButton.getText().toString();
 
-                    // הצגת התשובה הנכונה
-                    highlightCorrectAnswer();
+            boolean correct = selectedAnswer.equals(correctAnswer) ||
+                    Html.fromHtml(correctAnswer, Html.FROM_HTML_MODE_LEGACY).toString().equals(selectedAnswer);
 
-                    Toast.makeText(TriviaActivity.this, "לא נכון!", Toast.LENGTH_SHORT).show();
-                }
-
-                disableButtons();
+            if (correct) {
+                selectedButton.setBackgroundTintList(getColorStateList(R.color.correct_answer));
+                Toast.makeText(TriviaActivity.this, "צדקת! זכית בנקודה", Toast.LENGTH_SHORT).show();
+                score += 10;
+                updateScore();
+            } else {
+                selectedButton.setBackgroundTintList(getColorStateList(R.color.wrong_answer));
+                highlightCorrectAnswer();
+                Toast.makeText(TriviaActivity.this, "לא נכון!", Toast.LENGTH_SHORT).show();
             }
+
+            disableButtons();
+            handler.postDelayed(() -> loadTriviaQuestion(), FEEDBACK_DELAY);
         };
 
         option1.setOnClickListener(listener);
@@ -220,11 +230,10 @@ public class TriviaActivity extends AppCompatActivity {
 
     private void highlightCorrectAnswer() {
         MaterialButton[] buttons = {option1, option2, option3, option4};
-
         for (MaterialButton button : buttons) {
-            String buttonText = button.getText().toString();
-            if (buttonText.equals(correctAnswer) ||
-                    Html.fromHtml(correctAnswer, Html.FROM_HTML_MODE_LEGACY).toString().equals(buttonText)) {
+            String text = button.getText().toString();
+            if (text.equals(correctAnswer) ||
+                    Html.fromHtml(correctAnswer, Html.FROM_HTML_MODE_LEGACY).toString().equals(text)) {
                 button.setBackgroundTintList(getColorStateList(R.color.correct_answer));
                 break;
             }
@@ -238,11 +247,45 @@ public class TriviaActivity extends AppCompatActivity {
         option4.setEnabled(false);
     }
 
+    // ----------------------- End of Game ----------------------
+
+    private void updateUserCoinsInFirebase() {
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() != null) {
+            DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(auth.getUid());
+
+            int coinsEarned = (score / 10) * 100;
+
+            userRef.child("coins").get().addOnCompleteListener(task -> {
+                int currentCoins = 0;
+                if (task.isSuccessful() && task.getResult().exists()) {
+                    currentCoins = task.getResult().getValue(Integer.class);
+                }
+                int newCoins = currentCoins + coinsEarned;
+
+                userRef.child("coins").setValue(newCoins)
+                        .addOnSuccessListener(unused -> Toast.makeText(TriviaActivity.this, "התווספו לך " + coinsEarned + " מטבעות!", Toast.LENGTH_SHORT).show())
+                        .addOnFailureListener(e -> Toast.makeText(TriviaActivity.this, "שגיאה בעדכון מטבעות", Toast.LENGTH_SHORT).show());
+            });
+        } else {
+            Toast.makeText(this, "המשתמש לא מחובר!", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showGameOverDialog() {
+        updateUserCoinsInFirebase(); // קריאה לעדכון המטבעות
+
+        new AlertDialog.Builder(this)
+                .setTitle("סיום המשחק")
+                .setMessage("הניקוד שלך: " + score)
+                .setPositiveButton("אישור", (d, w) -> finish())
+                .setCancelable(false)
+                .show();
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (countDownTimer != null) {
-            countDownTimer.cancel();
-        }
+        if (countDownTimer != null) countDownTimer.cancel();
     }
 }

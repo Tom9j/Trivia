@@ -1,4 +1,4 @@
-package com.example.trivia;
+package com.example.trivia.home;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -8,9 +8,10 @@ import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.trivia.R;
+
 public class MainActivity extends AppCompatActivity {
 
-    private SocketConnectionManager socketManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,13 +21,8 @@ public class MainActivity extends AppCompatActivity {
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
-        socketManager = SocketConnectionManager.getInstance();
 
         // בדיקה האם socket קיים כבר
-        if (socketManager.getSocket() == null) {
-            // התחברות לשרת רק אם לא קיים socket
-            socketManager.connect("10.0.0.13", 12345);
-        }
 
         Button loginButton = findViewById(R.id.loginButton);
         loginButton.setOnClickListener(new View.OnClickListener() {

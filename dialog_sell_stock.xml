@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="סמל:"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/tv_dialog_symbol"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="AAPL"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="מחיר נוכחי:"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/tv_dialog_price"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="₪150.00"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ברשותך:"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/tv_dialog_owned_quantity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="10"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:text="מניות"
+            android:textSize="16sp"/>
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="כמה מניות למכור:"
+        android:textSize="14sp"/>
+
+    <EditText
+        android:id="@+id/et_dialog_quantity"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:hint="הזן כמות"/>
+
+    <Button
+        android:id="@+id/btn_sell_all"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="מכור הכל"
+        style="@style/Widget.MaterialComponents.Button.TextButton"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="שווי כולל:"
+        android:textSize="14sp"/>
+
+    <TextView
+        android:id="@+id/tv_dialog_total_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="₪0.00"
+        android:textSize="16sp"
+        android:textStyle="bold"/>
+</LinearLayout>
