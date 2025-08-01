@@ -1,0 +1,11 @@
+This is a demo text file that demonstrates the VRAM system's ability to load and cache text resources. The system can handle various types of data including text files, JSON configurations, binary data, and more.
+
+VRAM features:
+- Dynamic memory management
+- Intelligent caching with LRU algorithm
+- Automatic compression
+- Version control and synchronization
+- Real-time memory monitoring
+- Network error recovery
+
+This text will be compressed and stored on the server, then downloaded and cached by the M5StickC Plus2 when needed.
